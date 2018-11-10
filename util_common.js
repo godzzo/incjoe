@@ -5,48 +5,93 @@
 
 const fs = require('fs');
 const mustache = require('mustache');
+const DomParser = require('dom-parser');
 
-function LoadFile(filePath, json) {
-    let text = fs.readFileSync(filePath).toString();
+const parser = new DomParser();
+
+let config = {};
+
+if ( fs.existsSync('./config.json') ) {
+    config = JsonFromFile ('./config.json');
+}
+
+function LoadFile(filePath, json, tagName='include') {
+    let text = ReadContent(filePath);
+
+    const beginTag = `<${tagName}`;
+    const endTag = `</${tagName}>`;
 
     const content = [];
 
-    while (text.indexOf('<include src="') > -1) {
-        const pos = text.indexOf('<include src="');
+    while (text.indexOf(beginTag) > -1) {
+        const pos = text.indexOf(beginTag);
     
         content.push( text.substring(0, pos) );
     
-        text = text.substring(pos + 14);
+        text = text.substring(pos);
     
-        const after = text.indexOf('></include>');
+        const after = text.indexOf(endTag);
     
-        const incTag = text.substring(0, after);
-    
-        const incParms = incTag.replace(/"/g, '').replace(/ data=/g, ' ');
-        const parms = incParms.split(/ /g);
-    
-        console.log( '[' + parms[0] + ':' + parms[1] + ']' );
-    
-        content.push( ParseInclude(parms[0], parms[1]) );
+        const incTag = text.substring(0, after + endTag.length);
 
-        text = text.substring(after + 11);
+        console.log( 'PARSE', incTag );
+
+        const dom = parser.parseFromString(incTag);
+
+        const el = dom.getElementsByTagName(tagName)[0];
+
+        const src = el.getAttribute("src");
+        const data = el.getAttribute("data");
+        const parms = el.getAttribute("parms");
+        const inner = el.innerHTML;
+
+        console.log( 'attrs', {data, src, parms, inner} );
+
+        content.push( ParseInclude(src, data, parms, inner, filePath) );
+        
+        text = text.substring(after + endTag.length);
     }
 
     if (text.length > 0) {
         content.push( text );
     }
 
-    let html = content.join("\n");
+    let html = content.join("");
 
     html = ReplaceKeys(html, json);
 
     return html;
 }
 
-function ParseInclude(src, data) {
-    let jsonData = {};
+function ReadContent(filePath) {
+    if ( filePath.startsWith('inner:') ){
 
-    if (data) {
+        return filePath.substring('inner:'.length);
+    } else {
+
+        return fs.readFileSync(filePath).toString();
+    }
+}
+
+function ParseInclude(src, data, parms, inner, filePath) {
+    let jsonData = {};
+    let parmsObj = {};
+
+    if (!src || src == null) {
+        src = 'inner:' + inner;
+    }
+
+    if (parms) {
+        const keyVals = parms.split(/;/g);
+
+        for (const keyVal of keyVals) {
+            const keyTags = keyVal.split(/\:/g);
+
+            parmsObj[ keyTags[0] ] = keyTags[1];
+        }
+    }
+
+    if (data && data != null) {
         jsonData = JsonFromFile (data);
     }
 
@@ -56,15 +101,25 @@ function ParseInclude(src, data) {
         const contents = [];
 
         for (const jsonItem of jsonData) {
-            content = LoadFile(src, jsonItem);
+            // jsonItem.parms = parmsObj;
+            const json = Object.assign(jsonItem, parmsObj);
+            json.config = config;
+            json.template = filePath;
+
+            content = LoadFile(src, json);
 
             contents.push(content);
         }
 
-        content = contents.join('\n');
+        content = contents.join('');
     } else {
 
-        content = LoadFile(src, jsonData);
+        // jsonData.parms = parmsObj;
+        const json = Object.assign(jsonData, parmsObj);
+        json.config = config;
+        json.template = filePath;
+
+        content = LoadFile(src, json);
     }
 
     return content;

@@ -9,6 +9,16 @@
         </ul>
     </div>
 
+    <ul class="second" >
+        <include data="t_basket_list.json" >
+            <li class="second-item" data-incjoe-template="{{ template }}">
+                <span> name: {{ name }} </span>
+                <span> age: {{ age }} </span>
+                <span> type: {{ type }} </span>
+            </li>
+        </include>
+    </ul>
+
     <include src="t_footer.html"></include>
 </body>
 

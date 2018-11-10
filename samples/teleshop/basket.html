@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="hu">
 
@@ -6,28 +5,39 @@
     <meta charset="utf-8">
 
 
-
-
-
-    <title> Kosár </title>
+    <title> Kosár / TeleShop by Godzzo </title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
 
     <link href="//stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet">
-</head>
+    
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    
+    <script src="//code.jquery.com/jquery-3.2.1.min.js" ></script>
 
+    <!-- For datepicker -->
+    <script src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+    <link href="//cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+
+        
+    <script>
+        $(function () {
+            $(".datepicker").datepicker();
+        });
+    </script>
+</head>
 
 
 <body>
     <div class="main">
         <ul>
             
-
 <li>
     <span> name: John Doe </span>
     <span> age: 22 </span>
     <span> type: NORMAL </span>
 </li>
-
 
 <li>
     <span> name: Mary Lee </span>
@@ -35,23 +45,40 @@
     <span> type: HYPER </span>
 </li>
 
-
 <li>
     <span> name: Wong Fan </span>
     <span> age: 33 </span>
     <span> type: SOFT </span>
 </li>
 
-
         </ul>
     </div>
 
+    <ul class="second" >
+        
+            <li class="second-item" data-incjoe-template=".&#x2F;tp_basket.html">
+                <span> name: John Doe </span>
+                <span> age: 22 </span>
+                <span> type: NORMAL </span>
+            </li>
+        
+            <li class="second-item" data-incjoe-template=".&#x2F;tp_basket.html">
+                <span> name: Mary Lee </span>
+                <span> age: 27 </span>
+                <span> type: HYPER </span>
+            </li>
+        
+            <li class="second-item" data-incjoe-template=".&#x2F;tp_basket.html">
+                <span> name: Wong Fan </span>
+                <span> age: 33 </span>
+                <span> type: SOFT </span>
+            </li>
+        
+    </ul>
+
     
 
-<script src="//code.jquery.com/jquery-3.2.1.slim.min.js" ></script>
-
 <script src="//stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" ></script>
-
 
 </body>
 
