@@ -1,0 +1,21 @@
+{
+  "name": "incjoe",
+  "version": "1.0.0",
+  "description": "Include htmls on client side and use static json files for data",
+  "main": "do_include_html.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "include",
+    "html",
+    "json"
+  ],
+  "author": "Godzzo <egodzzo@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "jsdom": "^13.0.0",
+    "mustache": "^3.0.0"
+  }
+}

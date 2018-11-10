@@ -1,0 +1,35 @@
+
+Form + Parsley
+
+OpenModal
+OpenWindow
+
+SaveWithAppend
+SaveWithReplace
+
+Calendar (OpenModal, OpenWindow)
+
+Widgets / Components / Control
+- FileUpload
+- DatePicker
+- DateTimePicker
+- Select2 - Multi, Suggest, Combo
+
+DataTables (JSON)
+- Responsive
+
+SaveForm, AddDataByForm, AddData, RefreshWith
+
+localStorage
+
+localStorage.getItem('not_exists') == null;
+if ( !localStorage.getItem('not_exists') ) 'NOT';
+
+IndexedDB
+https://dexie.org/
+
+using Storage (Chrome 10MB min 2MB)!
+
+AllData can use it!
+Need a CLEAR!
+

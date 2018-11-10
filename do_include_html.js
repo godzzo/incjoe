@@ -14,4 +14,6 @@ const full = LoadFile(inPath);
 
 console.log(full);
 
+console.log('outPath', outPath);
+
 fs.writeFileSync(outPath, full);
