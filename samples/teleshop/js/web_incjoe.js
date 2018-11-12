@@ -17,6 +17,8 @@ $(() => {
                 FormAppendTo(form[0], template, toSel);
             } else if (action == 'prepend') {
                 FormPrependTo(form[0], template, toSel);
+            } else if (action == 'replace') {
+                FormReplace(form[0], template, toSel);
             } else {
                 console.error(`incjoe-submit : Action not supported ${action} !`);
             }
@@ -70,6 +72,14 @@ function FormPrependTo(form, template, toSel) {
     const content = RenderTemplate(template, data);
 
     $(toSel).prepend(content);
+}
+
+function FormReplace(form, template, toSel) {
+    const data = FormToData(form);
+
+    const content = RenderTemplate(template, data);
+
+    $(toSel).html(content);
 }
 
 function FormToData(form) {
