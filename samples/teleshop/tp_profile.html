@@ -1,13 +1,18 @@
 
 <include src="t_begin.html" ></include>
 
-<include src="t_header.html" parms="title:Nagy Kosár" ></include>
+<include src="t_header.html" parms="title:Nagy Kosár;meta_name:Akármi" ></include>
 
 <body>
     <div class="main">
 
+        <form>
+            <include src="components/datepicker.html" parms="form_id:profile;name:dtFrom;placeholder:Érvényesség kezdete"></include>
+
+            <include src="components/datepicker.html" parms="form_id:profile;name:dtTo;placeholder:Érvényesség vége"></include>
+        </form>
         
-        <include src="components/datepicker.html"></include>
+
 
     </div>
 

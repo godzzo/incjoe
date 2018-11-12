@@ -9,13 +9,26 @@ const DomParser = require('dom-parser');
 
 const parser = new DomParser();
 
+const ctx = {
+    templates: {}
+};
+
 let config = {};
 
 if ( fs.existsSync('./config.json') ) {
     config = JsonFromFile ('./config.json');
 }
 
-function LoadFile(filePath, json, tagName='include') {
+function LateParse(content) {
+    content = content.replace(
+        '<script id="templates"></script>', 
+        `<script id="templates"> window.templates = ${ JSON.stringify(ctx.templates) }; </script>`
+    );
+    
+    return content;
+}
+
+function LoadFile(filePath, json, fnc, tagName='include') {
     let text = ReadContent(filePath);
 
     const beginTag = `<${tagName}`;
@@ -43,11 +56,12 @@ function LoadFile(filePath, json, tagName='include') {
         const src = el.getAttribute("src");
         const data = el.getAttribute("data");
         const parms = el.getAttribute("parms");
+        const name = el.getAttribute("name");
         const inner = el.innerHTML;
 
-        console.log( 'attrs', {data, src, parms, inner} );
+        // console.log( 'attrs', {data, src, parms, inner, name} );
 
-        content.push( ParseInclude(src, data, parms, inner, filePath) );
+        content.push( fnc(src, data, parms, inner, filePath, name) );
         
         text = text.substring(after + endTag.length);
     }
@@ -64,21 +78,27 @@ function LoadFile(filePath, json, tagName='include') {
 }
 
 function ReadContent(filePath) {
+    let content;
+
     if ( filePath.startsWith('inner:') ){
 
-        return filePath.substring('inner:'.length);
+        content = filePath.substring('inner:'.length);
     } else {
 
-        return fs.readFileSync(filePath).toString();
+        content = fs.readFileSync(filePath).toString();
     }
+
+    return content;
 }
 
-function ParseInclude(src, data, parms, inner, filePath) {
+function ParseInclude(src, data, parms, inner, filePath, name) {
     let jsonData = {};
     let parmsObj = {};
 
     if (!src || src == null) {
         src = 'inner:' + inner;
+    } else {
+        name = src;
     }
 
     if (parms) {
@@ -100,13 +120,20 @@ function ParseInclude(src, data, parms, inner, filePath) {
     if (Array.isArray(jsonData)) {
         const contents = [];
 
+        let i= 0;
+
         for (const jsonItem of jsonData) {
+            i++;
             // jsonItem.parms = parmsObj;
             const json = Object.assign(jsonItem, parmsObj);
             json.config = config;
-            json.template = filePath;
+            json.template = name;
+            json._position = i;
+            json._time = new Date().getTime();
 
-            content = LoadFile(src, json);
+            ctx.templates[name] = escape( ReadContent(src) );
+
+            content = LoadFile(src, json, ParseInclude);
 
             contents.push(content);
         }
@@ -117,9 +144,12 @@ function ParseInclude(src, data, parms, inner, filePath) {
         // jsonData.parms = parmsObj;
         const json = Object.assign(jsonData, parmsObj);
         json.config = config;
-        json.template = filePath;
+        json.template = name;
+        json._time = new Date().getTime();
 
-        content = LoadFile(src, json);
+        ctx.templates[name] = escape( ReadContent(src) );
+
+        content = LoadFile(src, json, ParseInclude);
     }
 
     return content;
@@ -158,5 +188,6 @@ module.exports = {
     LoadFile,
     ParseInclude,
     ReplaceKeys,
-    JsonFromFile
+    JsonFromFile,
+    LateParse
 };
