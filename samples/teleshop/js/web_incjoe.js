@@ -15,6 +15,12 @@ $(() => {
                 const template = GetTemplateName(el, toSel);
 
                 FormAppendTo(form[0], template, toSel);
+
+                const modal = el.closest( "[role='dialog']" );
+
+                modal.modal('toggle');
+
+                form[0].reset();
             });
 
         } else {
