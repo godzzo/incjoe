@@ -4,29 +4,30 @@ $(() => {
     $('[data-incjoe-submit]').each((idx, el) => {
         const action = $(el).attr('data-incjoe-submit');
 
-        if (action == 'append') {
 
-            $(el).click((evt) => {
+        $(el).click((evt) => {
 
-                const el = $(evt.currentTarget);
+            const el = $(evt.currentTarget);
 
-                const form = el.closest('form');
-                const toSel = el.data('incjoe-target');
-                const template = GetTemplateName(el, toSel);
+            const form = el.closest('form');
+            const toSel = el.data('incjoe-target');
+            const template = GetTemplateName(el, toSel);
 
+            if (action == 'append') {
                 FormAppendTo(form[0], template, toSel);
+            } else if (action == 'prepend') {
+                FormPrependTo(form[0], template, toSel);
+            } else {
+                console.error(`incjoe-submit : Action not supported ${action} !`);
+            }
+    
+            const modal = el.closest( "[role='dialog']" );
 
-                const modal = el.closest( "[role='dialog']" );
+            modal.modal('toggle');
 
-                modal.modal('toggle');
+            form[0].reset();
+        });
 
-                form[0].reset();
-            });
-
-        } else {
-
-            console.error(`incjoe-submit : Action not supported ${action} !`);
-        }
     });
 })
 
@@ -61,6 +62,14 @@ function FormAppendTo(form, template, toSel) {
     const content = RenderTemplate(template, data);
 
     $(toSel).append(content);
+}
+
+function FormPrependTo(form, template, toSel) {
+    const data = FormToData(form);
+
+    const content = RenderTemplate(template, data);
+
+    $(toSel).prepend(content);
 }
 
 function FormToData(form) {
