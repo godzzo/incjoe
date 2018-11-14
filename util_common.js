@@ -10,13 +10,27 @@ const DomParser = require('dom-parser');
 const parser = new DomParser();
 
 const ctx = {
-    templates: {}
+    templates: {},
+    js: {},
+    css: {}
 };
 
 let config = {};
 
 if ( fs.existsSync('./config.json') ) {
     config = JsonFromFile ('./config.json');
+}
+
+function ParseFile(inPath, outPath) {
+    let full = LoadFile(inPath, undefined, ParseIncludeTag, ParseInclude, 'include');
+
+    fs.writeFileSync(outPath, full);
+
+    full = LoadFile(outPath, undefined, ParseLaterTag, ParseLater, 'later');
+
+    full = LateParse(full);
+
+    fs.writeFileSync(outPath, full);
 }
 
 function LateParse(content) {
@@ -28,7 +42,49 @@ function LateParse(content) {
     return content;
 }
 
-function LoadFile(filePath, json, fnc, tagName='include') {
+function ParseLater(filePath, pel) {
+    
+    let content = [];
+
+    if (pel.name == 'script') {
+        for (const tname in ctx.js) {
+            console.log(`LATER JS TAG ${tname}.`);
+            const tag = ctx.js[tname];
+            content.push(`<script src="${ tag.src }"></script>`);
+        }
+    } else if (pel.name == 'css') {
+        for (const tname in ctx.css) {
+            console.log(`LATER CSS TAG ${tname}.`);
+            const tag = ctx.css[tname];
+            content.push(`<link rel="stylesheet" href="${ tag.href }">`);
+        }
+    } else {
+        console.error(`Unknown later.name ( ${pel.name} ) !`);
+    }
+
+    console.log(`LATER ${pel.name}:`, content);
+
+    return content.join("\n");
+}
+
+function ParseLaterTag(el) {
+    const name = el.getAttribute("name");
+    
+    return {name};
+}
+
+function ParseIncludeTag(el) {
+    const src = el.getAttribute("src");
+    const data = el.getAttribute("data");
+    const parms = el.getAttribute("parms");
+    const name = el.getAttribute("name");
+
+    const inner = el.innerHTML;
+
+    return {src, data, parms, name, inner};
+}
+
+function LoadFile(filePath, json, parseTag, fnc, tagName='include') {
     let text = ReadContent(filePath);
 
     const beginTag = `<${tagName}`;
@@ -53,15 +109,11 @@ function LoadFile(filePath, json, fnc, tagName='include') {
 
         const el = dom.getElementsByTagName(tagName)[0];
 
-        const src = el.getAttribute("src");
-        const data = el.getAttribute("data");
-        const parms = el.getAttribute("parms");
-        const name = el.getAttribute("name");
-        const inner = el.innerHTML;
+        const parsedEl = parseTag(el);
 
-        // console.log( 'attrs', {data, src, parms, inner, name} );
+        console.log( 'attrs', parsedEl );
 
-        content.push( fnc(src, data, parms, inner, filePath, name) );
+        content.push( fnc(filePath, parsedEl) );
         
         text = text.substring(after + endTag.length);
     }
@@ -86,23 +138,47 @@ function ReadContent(filePath) {
     } else {
 
         content = fs.readFileSync(filePath).toString();
+
+        const laterJsPath = filePath.replace(/\.html/gi, '-later-js.json')
+        const laterCssPath = filePath.replace(/\.html/gi, '-later-css.json')
+
+        console.log(`Check ${ laterJsPath } : ${ fs.existsSync(laterJsPath) }`);
+        console.log(`Check ${ laterCssPath } : ${ fs.existsSync(laterCssPath) }`);
+
+        if (fs.existsSync(laterJsPath)) {
+            const jsLater = JsonFromFile(laterJsPath);
+
+            for (const jsli of jsLater) {
+                if (!jsli.name) jsli.name = jsli.src;
+                ctx.js[jsli.src] = jsli;
+            }
+        }
+
+        if (fs.existsSync(laterCssPath)) {
+            const cssLater = JsonFromFile(laterCssPath);
+
+            for (const cssli of cssLater) {
+                if (!cssli.name) cssli.name = cssli.href;
+                ctx.css[cssli.href] = cssli;
+            }
+        }
     }
 
     return content;
 }
 
-function ParseInclude(src, data, parms, inner, filePath, name) {
+function ParseInclude(filePath, pel) {
     let jsonData = {};
     let parmsObj = {};
 
-    if (!src || src == null) {
-        src = 'inner:' + inner;
+    if (!pel.src || pel.src == null) {
+        pel.src = 'inner:' + pel.inner;
     } else {
-        name = src;
+        pel.name = pel.src;
     }
 
-    if (parms) {
-        const keyVals = parms.split(/;/g);
+    if (pel.parms) {
+        const keyVals = pel.parms.split(/;/g);
 
         for (const keyVal of keyVals) {
             const keyTags = keyVal.split(/\:/g);
@@ -111,8 +187,8 @@ function ParseInclude(src, data, parms, inner, filePath, name) {
         }
     }
 
-    if (data && data != null) {
-        jsonData = JsonFromFile (data);
+    if (pel.data && pel.data != null) {
+        jsonData = JsonFromFile (pel.data);
     }
 
     let content;
@@ -127,13 +203,13 @@ function ParseInclude(src, data, parms, inner, filePath, name) {
             // jsonItem.parms = parmsObj;
             const json = Object.assign(jsonItem, parmsObj);
             json.config = config;
-            json.template = name;
+            json.template = pel.name;
             json._position = i;
             json._time = new Date().getTime();
 
-            ctx.templates[name] = escape( ReadContent(src) );
+            ctx.templates[pel.name] = escape( ReadContent(pel.src) );
 
-            content = LoadFile(src, json, ParseInclude);
+            content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude);
 
             contents.push(content);
         }
@@ -144,12 +220,12 @@ function ParseInclude(src, data, parms, inner, filePath, name) {
         // jsonData.parms = parmsObj;
         const json = Object.assign(jsonData, parmsObj);
         json.config = config;
-        json.template = name;
+        json.template = pel.name;
         json._time = new Date().getTime();
 
-        ctx.templates[name] = escape( ReadContent(src) );
+        ctx.templates[pel.name] = escape( ReadContent(pel.src) );
 
-        content = LoadFile(src, json, ParseInclude);
+        content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude);
     }
 
     return content;
@@ -189,5 +265,6 @@ module.exports = {
     ParseInclude,
     ReplaceKeys,
     JsonFromFile,
-    LateParse
+    LateParse,
+    ParseFile
 };

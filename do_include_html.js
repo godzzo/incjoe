@@ -3,21 +3,16 @@
 
 'use strict'
 
-const fs = require('fs');
+const ParseFile = require('./util_common.js').ParseFile;
 
-const LoadFile = require('./util_common.js').LoadFile;
-const ParseInclude = require('./util_common.js').ParseInclude;
-const LateParse = require('./util_common.js').LateParse;
+let inPath, outPath;
 
-const inPath = process.argv[2];
-const outPath = process.argv[3];
+if (process.argv.length > 3) {
+    inPath = process.argv[2];
+    outPath = process.argv[3];
+} else {
+    inPath = "bstrap/tp_album.html";
+    outPath = "bstrap/album.html";
+}
 
-let full = LoadFile(inPath, undefined, ParseInclude, 'include');
-
-full = LateParse(full);
-
-console.log(full);
-
-console.log('outPath', outPath);
-
-fs.writeFileSync(outPath, full);
+ParseFile(inPath, outPath);
