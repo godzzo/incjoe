@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const mustache = require('mustache');
+const ejs = require('ejs');
 const DomParser = require('dom-parser');
 
 const parser = new DomParser();
@@ -15,7 +16,9 @@ const ctx = {
     css: {}
 };
 
-let config = {};
+let config = {
+    templateEngine: 'mustache'
+};
 
 if ( fs.existsSync('./config.json') ) {
     config = JsonFromFile ('./config.json');
@@ -78,13 +81,18 @@ function ParseIncludeTag(el) {
     const data = el.getAttribute("data");
     const parms = el.getAttribute("parms");
     const name = el.getAttribute("name");
+    const engine = el.getAttribute("engine");
 
     const inner = el.innerHTML;
 
-    return {src, data, parms, name, inner};
+    return {src, data, parms, name, inner, engine};
 }
 
-function LoadFile(filePath, json, parseTag, fnc, tagName='include') {
+function LoadFile(filePath, json, parseTag, fnc, tagName='include', templateEngine) {
+    if ( ! templateEngine ) {
+        templateEngine = config.templateEngine;
+    }
+
     let text = ReadContent(filePath);
 
     const beginTag = `<${tagName}`;
@@ -124,7 +132,7 @@ function LoadFile(filePath, json, parseTag, fnc, tagName='include') {
 
     let html = content.join("");
 
-    html = ReplaceKeys(html, json);
+    html = ReplaceKeys(html, json, templateEngine);
 
     return html;
 }
@@ -142,24 +150,26 @@ function ReadContent(filePath) {
         const laterJsPath = filePath.replace(/\.html/gi, '-later-js.json')
         const laterCssPath = filePath.replace(/\.html/gi, '-later-css.json')
 
-        console.log(`Check ${ laterJsPath } : ${ fs.existsSync(laterJsPath) }`);
-        console.log(`Check ${ laterCssPath } : ${ fs.existsSync(laterCssPath) }`);
+        if (filePath.endsWith('.html')) {
+            console.log(`Check LaterJS ${ laterJsPath } : ${ fs.existsSync(laterJsPath) }`);
+            console.log(`Check LaterJS ${ laterCssPath } : ${ fs.existsSync(laterCssPath) }`);
 
-        if (fs.existsSync(laterJsPath)) {
-            const jsLater = JsonFromFile(laterJsPath);
+            if (fs.existsSync(laterJsPath)) {
+                const jsLater = JsonFromFile(laterJsPath);
 
-            for (const jsli of jsLater) {
-                if (!jsli.name) jsli.name = jsli.src;
-                ctx.js[jsli.src] = jsli;
+                for (const jsli of jsLater) {
+                    if (!jsli.name) jsli.name = jsli.src;
+                    ctx.js[jsli.src] = jsli;
+                }
             }
-        }
 
-        if (fs.existsSync(laterCssPath)) {
-            const cssLater = JsonFromFile(laterCssPath);
+            if (fs.existsSync(laterCssPath)) {
+                const cssLater = JsonFromFile(laterCssPath);
 
-            for (const cssli of cssLater) {
-                if (!cssli.name) cssli.name = cssli.href;
-                ctx.css[cssli.href] = cssli;
+                for (const cssli of cssLater) {
+                    if (!cssli.name) cssli.name = cssli.href;
+                    ctx.css[cssli.href] = cssli;
+                }
             }
         }
     }
@@ -209,7 +219,7 @@ function ParseInclude(filePath, pel) {
 
             ctx.templates[pel.name] = escape( ReadContent(pel.src) );
 
-            content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude);
+            content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude, 'include', pel.engine);
 
             contents.push(content);
         }
@@ -225,7 +235,7 @@ function ParseInclude(filePath, pel) {
 
         ctx.templates[pel.name] = escape( ReadContent(pel.src) );
 
-        content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude);
+        content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude, 'include', pel.engine);
     }
 
     return content;
@@ -248,10 +258,17 @@ function JsonFromFile (filePath) {
     return data;
 }
 
-function ReplaceKeys(content, jsonData) {
-    if (jsonData) {
+function ReplaceKeys(content, data, templateEngine) {
+    if (data) {
+        let rendered;
 
-        const rendered = mustache.render(content, jsonData);
+        if (templateEngine == "mustache") {
+            rendered = mustache.render(content, data);
+        } else if (templateEngine == "ecma") {
+            rendered = eval('`' + content + '`');
+        } else if (templateEngine == "ejs") {
+            rendered = ejs.render(content, data);
+        }
         
         return rendered;
     } else {

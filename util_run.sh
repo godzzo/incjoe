@@ -1,5 +1,13 @@
 #!/bin/bash
 
+function ijoe {
+    tpname=`echo -en $1 | sed 's/tp_//gi'`;
+
+    echo "Building by tp_$tpname To $tpname"; 
+
+    node ../do_include_html.js ./tp_$tpname ./$tpname;
+}
+
 function log_state {
     now=`date '+%Y-%m-%d %H:%M:%S'`;
 
