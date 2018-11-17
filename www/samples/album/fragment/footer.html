@@ -1,0 +1,41 @@
+<footer class="footer">
+        <div class="container">
+            <p class="float-right">
+                <a href="#">Back to top</a>
+            </p>
+    
+            <span class="text-muted">
+                {{ ^description }}
+                Általános leírás a footer -ben...
+                {{ /description }}
+    
+                {{ #description }}
+                {{ description }}
+                {{ /description }}
+            </span>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap core JavaScript
+      ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    
+    <!-- unitegallery!!! <script src="//code.jquery.com/jquery-3.3.1.slim.min.js"></script> -->
+    
+    <script src="//code.jquery.com/jquery-1.12.4.js"></script>
+    
+    <script src="//cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+    <script src="//stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+    
+    <script src="js/holder.min.js"></script>
+    
+    <script src="//cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.1/mustache.js"></script>
+    
+    <!-- IncJoe web -es támogató script -ek: -->
+    <script src="../../js/web_incjoe.js"></script>
+    
+    <!-- Fragment -ek script -jei -->
+    <later name="script"></later>
+    
+    <!-- Összes template -->
+    <script id="templates"></script>

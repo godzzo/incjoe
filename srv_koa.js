@@ -12,9 +12,8 @@ const logger = require('koa-logger');
 
 const Koa = require('koa');
 
-const docRoot = process.argv[2];
-const port = parseInt(process.argv[3]);
-
+const docRoot = process.argv.length > 3? process.argv[2]: './www';
+const port = process.argv.length > 3? parseInt(process.argv[3]): 7722;
 
 const app = new Koa();
 

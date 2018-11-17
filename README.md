@@ -10,6 +10,7 @@
 - [Limitations](#limitations)
 - [Additive JS, CSS](#additive-js-css)
 - [Bash usefull things](#bash-usefull-things)
+- [Web JOE](#web-joe)
 
 ## Simple
 
@@ -223,4 +224,68 @@ function incjoe {
         node $INCJOE_HOME/do_include_html.js ./tp_$name ./$name;
     done;
 }
+```
+
+## Web JOE
+
+### Try it: 
+
+Run server:
+```sh
+user@machine:~/Test/incjoe$ ./run_server.sh 
+
+util_run.sh LOADED :)
+:START: 2018-11-17 11:35:58
+node ./srv_koa.js  >>./log/srv_koa.log 2>>./log/srv_koa-err.log
+```
+
+And browse: [http://localhost:7722/samples/album/](http://localhost:7722/samples/album/)
+
+Click the : **Add new picture** button and fill the form and push the **Save Form** button, the new picture will be placed in the example album.
+
+### How it works
+
+ Joe have a `web_incjoe.js` script file, which can **append / prepend / replace** the templates in runtime (means in browser on the client side).
+
+The **script id=templates** needed in your template if you want to use the template contents in the browser:
+```js
+<script id="templates"></script>
+```
+
+Need your templates use the template property:
+```html
+<div... data-incjoe-template="{{ template }}">
+</div>
+```
+
+I choose to show the form in the modal, you don't have to (bootstrap handle this):
+```html
+<a href="#" data-toggle="modal" data-target="#modalAlbumItem">Új kép beszúrása</a>
+```
+
+And define by html attributes for Joe, what to do with form data:
+* `data-incjoe-target="#album_item_container"`
+  - The CSS selector of the template container 
+    - Joe will try to find out the template id by `data-incjoe-template`
+      - and try to load from window.templates 
+      - *where the includer replaced the `<script id="templates"></script>` with templates json*
+* `data-incjoe-submit="prepend"` 
+  - The actions how to save the data
+    - **prepend** - insert as first child
+    - **append** - append as last child
+    - **replace** - replcae content
+
+The form button (right now only use mustache, later ejs and ecma string literal):
+
+```html
+<form>...
+    <button type="button" 
+        id="form-message-submit" 
+        class="btn btn-primary" 
+        data-incjoe-submit="prepend"
+        data-incjoe-target="#album_item_container"
+    >
+        Save Form
+    </button>
+</form>
 ```

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="img/favicon.ico">
+
+    <title> {{ title }} </title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+
+    {{ #sticky }} 
+    <link rel="stylesheet" href="css/sticky-footer-navbar.css">
+    {{ /sticky }}
+
+    {{ #css }} 
+    <!-- Custom styles for this template -->
+    <link href="css/{{ css }}.css" rel="stylesheet">
+    {{ /css }}
+
+    <!-- Fragment -ek css -ei -->
+    <later name="css"></later>
+</head>

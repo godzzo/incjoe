@@ -1,0 +1,17 @@
+[
+    {
+        "name": "John Doe",
+        "age": 22,
+        "type": "NORMAL"
+    },
+    {
+        "name": "Mary Lee",
+        "age": 27,
+        "type": "HYPER"
+    },
+    {
+        "name": "Wong Fan",
+        "age": 33,
+        "type": "SOFT"
+    }
+]
