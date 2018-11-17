@@ -17,11 +17,13 @@ const ctx = {
 };
 
 let config = {
-    templateEngine: 'mustache'
+    templateEngine: 'mustache',
+    printFragmentBlock: true
 };
 
 if ( fs.existsSync('./config.json') ) {
-    config = JsonFromFile ('./config.json');
+    const cfg = JsonFromFile ('./config.json');
+    Object.assign(config, cfg);
 }
 
 function ParseFile(inPath, outPath) {
@@ -262,12 +264,18 @@ function ReplaceKeys(content, data, templateEngine) {
     if (data) {
         let rendered;
 
+        console.log(`templateEngine: ${templateEngine}`);
+
         if (templateEngine == "mustache") {
             rendered = mustache.render(content, data);
         } else if (templateEngine == "ecma") {
             rendered = eval('`' + content + '`');
         } else if (templateEngine == "ejs") {
             rendered = ejs.render(content, data);
+        } else {
+            console.log(`Template not used, for this one.`);
+            
+            rendered = content;
         }
         
         return rendered;
