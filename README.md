@@ -8,7 +8,7 @@
 - [Render with parameters without json](#parms)
 - [Configuration](#configuration)
 - [Limitations](#limitations)
-- [Additive JS, CSS](#additive-js--css)
+- [Additive JS, CSS](#additive-js-css)
 
 
 ## Simple
