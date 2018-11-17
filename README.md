@@ -9,7 +9,7 @@
 - [Configuration](#configuration)
 - [Limitations](#limitations)
 - [Additive JS, CSS](#additive-js-css)
-
+- [Bash usefull things](#bash-usefull-things)
 
 ## Simple
 
@@ -191,3 +191,36 @@ Joe will try to find the `<later name="css"></later>` and `<later name="script">
 ```
 
 Joe make a unique set, for not inserting the same thing multiple times. If you have multiple jquery in multiple urls, you could use `{"href": ..., "name": JQuery"}` and Joe will use only one, but the **last** one.
+
+## Bash usefull things
+
+You can compile the following command an `index.html` *page* by `tp_index.html` template file:
+```sh
+user@server:~/Test/incjoe$ ijoe tp_index.html
+```
+
+Or you can compile all tp_ prefixed template files to html pages:
+```sh
+user@server:~/Test/incjoe$ incjoe
+```
+
+The functions, and settings, what I put my `.bashrc` file:
+```sh
+export INCJOE_HOME='/home/user/incjoe';
+
+function ijoe {
+    tpname=`echo -en $1 | sed 's/tp_//gi'`;
+
+    echo "Building by tp_$tpname To $tpname";.
+
+    node $INCJOE_HOME/do_include_html.js ./tp_$tpname ./$tpname;
+}
+
+function incjoe {
+    ls -1  | grep tp_ | while read prename; do
+        name=`echo -en $prename | sed 's/tp_//gi'`;
+        echo $name;
+        node $INCJOE_HOME/do_include_html.js ./tp_$name ./$name;
+    done;
+}
+```
