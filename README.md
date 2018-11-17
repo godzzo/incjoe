@@ -8,6 +8,7 @@
 - [Render with parameters without json](#parms)
 - [Configuration](#configuration)
 - [Limitations](#limitations)
+- [Additive JS, CSS](#additive-js--css)
 
 
 ## Simple
@@ -152,3 +153,41 @@ Not this:
 ```xml
 <include .../>
 ```
+
+## Additive JS, CSS
+
+By `later` tag, and naming convention Joe collects the fragment additive JS and CSS dependencies, and append to the later tag position. For example you have a `unite_gallery.html` fragment and it has css and js dependencies, you should crate a `unite_gallery-later-js.json` for js and a `unite_gallery-later-css.json` for css needs. Joe look for `-later-js.json` and `-later-css.json` postfixed files every included files.
+
+unite_gallery-later-js.json
+```js
+[
+    {"src": "/unitegallery/js/unitegallery.js"},
+    {"src": "/unitegallery/themes/default/ug-theme-default.js"}
+]
+```
+
+unite_gallery-later-css.json
+```js
+[
+    {"href": "/unitegallery/css/unite-gallery.css"},
+    {"href": "/unitegallery/themes/default/ug-theme-default.css"}
+]
+```
+
+Joe will try to find the `<later name="css"></later>` and `<later name="script"></later>` to insert all fragment dependencies:
+
+```html
+<head>
+    ...
+    <!-- Fragment -ek css -ei -->
+    <later name="css"></later>
+</head>
+
+<body>
+    ...
+    <!-- Fragment -ek script -jei -->
+    <later name="script"></later>
+</body>
+```
+
+Joe make a unique set, for not inserting the same thing multiple times. If you have multiple jquery in multiple urls, you could use `{"href": ..., "name": JQuery"}` and Joe will use only one, but the **last** one.
