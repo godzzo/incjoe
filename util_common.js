@@ -4,41 +4,56 @@
 'use strict'
 
 const fs = require('fs');
+const path = require('path');
 const mustache = require('mustache');
 const ejs = require('ejs');
 const DomParser = require('dom-parser');
 
 const parser = new DomParser();
 
-const ctx = {
-    templates: {},
-    js: {},
-    css: {}
-};
+function InitContext(inPath, parms, rootPath) {
+    const ctx = {
+        templates: {},
+        js: {},
+        css: {},
+        parms: parms,
+        rootPath
+    };
+    
+    let config = {
+        templateEngine: 'mustache',
+        printFragmentBlock: true
+    };
+    
+    const dirPath = path.dirname(inPath);
 
-let config = {
-    templateEngine: 'mustache',
-    printFragmentBlock: true
-};
+    if ( fs.existsSync(`${dirPath}/config.json`) ) {
+        const cfg = JsonFromFile (`${dirPath}/config.json`);
 
-if ( fs.existsSync('./config.json') ) {
-    const cfg = JsonFromFile ('./config.json');
-    Object.assign(config, cfg);
+        Object.assign(config, cfg);
+    }
+    
+    ctx.config = config;
+
+    return ctx;
 }
 
-function ParseFile(inPath, outPath) {
-    let full = LoadFile(inPath, undefined, ParseIncludeTag, ParseInclude, 'include');
+function ParseFile(inPath, outPath, parms, rootPath='.') {
+
+    const ctx = InitContext(inPath, parms, rootPath);
+
+    let full = LoadFile(inPath, undefined, ParseIncludeTag, ParseInclude, 'include', undefined, ctx);
 
     fs.writeFileSync(outPath, full);
 
-    full = LoadFile(outPath, undefined, ParseLaterTag, ParseLater, 'later');
+    full = LoadFile(outPath, undefined, ParseLaterTag, ParseLater, 'later', undefined, ctx);
 
-    full = LateParse(full);
+    full = LateParse(full, ctx);
 
     fs.writeFileSync(outPath, full);
 }
 
-function LateParse(content) {
+function LateParse(content, ctx) {
     content = content.replace(
         '<script id="templates"></script>', 
         `<script id="templates"> window.templates = ${ JSON.stringify(ctx.templates) }; </script>`
@@ -47,7 +62,7 @@ function LateParse(content) {
     return content;
 }
 
-function ParseLater(filePath, pel) {
+function ParseLater(filePath, pel, ctx) {
     
     let content = [];
 
@@ -90,12 +105,12 @@ function ParseIncludeTag(el) {
     return {src, data, parms, name, inner, engine};
 }
 
-function LoadFile(filePath, json, parseTag, fnc, tagName='include', templateEngine) {
+function LoadFile(filePath, json, parseTag, fnc, tagName='include', templateEngine, ctx) {
     if ( ! templateEngine ) {
-        templateEngine = config.templateEngine;
+        templateEngine = ctx.config.templateEngine;
     }
 
-    let text = ReadContent(filePath);
+    let text = ReadContent(filePath, ctx);
 
     const beginTag = `<${tagName}`;
     const endTag = `</${tagName}>`;
@@ -123,7 +138,7 @@ function LoadFile(filePath, json, parseTag, fnc, tagName='include', templateEngi
 
         console.log( 'attrs', parsedEl );
 
-        content.push( fnc(filePath, parsedEl) );
+        content.push( fnc(filePath, parsedEl, ctx) );
         
         text = text.substring(after + endTag.length);
     }
@@ -139,7 +154,7 @@ function LoadFile(filePath, json, parseTag, fnc, tagName='include', templateEngi
     return html;
 }
 
-function ReadContent(filePath) {
+function ReadContent(filePath, ctx) {
     let content;
 
     if ( filePath.startsWith('inner:') ){
@@ -157,7 +172,7 @@ function ReadContent(filePath) {
             console.log(`Check LaterJS ${ laterCssPath } : ${ fs.existsSync(laterCssPath) }`);
 
             if (fs.existsSync(laterJsPath)) {
-                const jsLater = JsonFromFile(laterJsPath);
+                const jsLater = JsonFromFile(laterJsPath, ctx);
 
                 for (const jsli of jsLater) {
                     if (!jsli.name) jsli.name = jsli.src;
@@ -166,7 +181,7 @@ function ReadContent(filePath) {
             }
 
             if (fs.existsSync(laterCssPath)) {
-                const cssLater = JsonFromFile(laterCssPath);
+                const cssLater = JsonFromFile(laterCssPath, ctx);
 
                 for (const cssli of cssLater) {
                     if (!cssli.name) cssli.name = cssli.href;
@@ -179,13 +194,14 @@ function ReadContent(filePath) {
     return content;
 }
 
-function ParseInclude(filePath, pel) {
+function ParseInclude(filePath, pel, ctx) {
     let jsonData = {};
     let parmsObj = {};
 
     if (!pel.src || pel.src == null) {
         pel.src = 'inner:' + pel.inner;
     } else {
+        pel.src = `${ctx.rootPath}/${pel.src}`;
         pel.name = pel.src;
     }
 
@@ -200,7 +216,7 @@ function ParseInclude(filePath, pel) {
     }
 
     if (pel.data && pel.data != null) {
-        jsonData = JsonFromFile (pel.data);
+        jsonData = JsonFromFile (pel.data, ctx);
     }
 
     let content;
@@ -214,14 +230,15 @@ function ParseInclude(filePath, pel) {
             i++;
             // jsonItem.parms = parmsObj;
             const json = Object.assign(jsonItem, parmsObj);
-            json.config = config;
+            json.config = ctx.config;
+            json.ctx = ctx;
             json.template = pel.name;
             json._position = i;
             json._time = new Date().getTime();
 
-            ctx.templates[pel.name] = escape( ReadContent(pel.src) );
+            ctx.templates[pel.name] = escape( ReadContent(pel.src, ctx) );
 
-            content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude, 'include', pel.engine);
+            content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude, 'include', pel.engine, ctx);
 
             contents.push(content);
         }
@@ -231,20 +248,21 @@ function ParseInclude(filePath, pel) {
 
         // jsonData.parms = parmsObj;
         const json = Object.assign(jsonData, parmsObj);
-        json.config = config;
+        json.config = ctx.config;
+        json.ctx = ctx;
         json.template = pel.name;
         json._time = new Date().getTime();
 
-        ctx.templates[pel.name] = escape( ReadContent(pel.src) );
+        ctx.templates[pel.name] = escape( ReadContent(pel.src, ctx) );
 
-        content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude, 'include', pel.engine);
+        content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude, 'include', pel.engine, ctx);
     }
 
     return content;
 }
 
-function JsonFromFile (filePath) {
-    const text = fs.readFileSync(filePath).toString();
+function JsonFromFile (filePath, ctx) {
+    const text = fs.readFileSync(ctx? `${ctx.rootPath}/${filePath}`: filePath).toString();
     let data = null;
 
     try {
