@@ -11,6 +11,7 @@
 - [Additive JS, CSS](#additive-js-css)
 - [Bash usefull things](#bash-usefull-things)
 - [Web JOE](#web-joe)
+- [Server JOE](#server-joe)
 
 ## Simple
 
@@ -288,4 +289,36 @@ The form button (right now only use mustache, later ejs and ecma string literal)
         Save Form
     </button>
 </form>
+```
+
+## Server JOE
+
+Running JOE as server:
+```sh
+user@machine:~/Test/incjoe$ node srv_incjoe.js ./www 7722
+
+PARMS:  { docRoot: './www', port: 7722 }
+  <-- GET /samples/album/index.html?name=hello&age=23&gen=true
+fileName index.html
+filePath /samples/album
+Template ./www//samples/album/tp_index.html
+qs parms { name: 'hello', age: '23', gen: 'true' }
+Template Modify time 2018-11-17T11:07:58.323Z
+Output Modify time 2018-11-17T11:08:28.887Z
+
+Include! { templatePath: './www//samples/album/tp_index.html',
+```
+
+Browse your template output name (tp_album.html >> album.html) and give the **gen** querystring parameter for Joe to compile the template:
+[http://localhost:7722/samples/album/index.html?name=Moose&age=23&gen=true](http://localhost:7722/samples/album/index.html?name=Moose&age=23&gen=true)
+
+You can substitute a QueryString parameters as **ctx.parms**.name in your templates.
+```html
+<h1 class="jumbotron-heading">
+    Album example - 
+
+    {{ #ctx.parms }}{{ #ctx.parms.name }}
+        {{ ctx.parms.name }}
+    {{ /ctx.parms.name }}{{ /ctx.parms }}
+</h1>
 ```
