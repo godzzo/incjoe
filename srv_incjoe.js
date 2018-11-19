@@ -60,8 +60,8 @@ async function TestOne (ctx) {
 }
 
 function ParseUrl(ctx) {
-    const url = ctx.request.url;
-    const fileName = path.basename(url).replace(/\?.*/g, '');
+    const url = ctx.request.url.replace(/\?.*/g, '');
+    const fileName = path.basename(url);
     const dirPath = path.dirname(url);
     const templatePath = `${docRoot}/${dirPath}/tp_${fileName}`;
     const templateRoot = `${docRoot}/${dirPath}`;
