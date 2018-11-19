@@ -11,7 +11,8 @@
 - [Additive JS, CSS](#additive-js-css)
 - [Bash usefull things](#bash-usefull-things)
 - [Web JOE](#web-joe)
-- [Server JOE](#server-joe)
+- [Server JOE with QS parms substitution](#server-joe-with-qs-parms-substitution)
+- [Server JOE with invokation](#server-joe-with-invokation)
 
 ## Simple
 
@@ -291,7 +292,7 @@ The form button (right now only use mustache, later ejs and ecma string literal)
 </form>
 ```
 
-## Server JOE
+## Server JOE with QS parms substitution
 
 Running JOE as server:
 ```sh
@@ -322,3 +323,81 @@ You can substitute a QueryString parameters as **ctx.parms**.name in your templa
     {{ /ctx.parms.name }}{{ /ctx.parms }}
 </h1>
 ```
+
+## Server JOE with invokation
+
+Joe could call server side logic for substitute the `<invoke name="EatLess"></invoke>` tags by name.
+
+Some static and one mysql and one mysql with formatter invokation
+www/samples/album/**tp_invoke_test.html**
+```html
+<div id="EatLess">
+    <invoke name="EatLess"></invoke>
+</div>
+<div id="ExerciseMore">
+    <invoke name="ExerciseMore"></invoke>
+</div>
+<div id="LearnEveryDay">
+    <invoke name="LearnEveryDay"></invoke>
+</div>
+<div id="ReadText">
+    <invoke name="ReadText"></invoke>
+</div>
+
+<div id="SqlTest1">
+    <invoke name="SqlTest1"></invoke>
+</div>
+<div id="SqlTest2">
+    <invoke name="SqlTest2"></invoke>
+</div>
+```
+
+The needed configuration for this:
+```js
+    "invokable": [
+        {
+            "name": "EatLess",
+            "mask": ".*invoke_test.*",
+            "module": "./test_invoke/simple.js",
+            "action": "EatLess"
+        },
+        {
+            "name": "ExerciseMore",
+            "mask": ".*invoke_test.*",
+            "module": "./test_invoke/simple.js",
+            "action": "ExerciseMore"
+        },
+        {
+            "name": "LearnEveryDay",
+            "mask": ".*invoke_test.*",
+            "module": "./test_invoke/simple.js",
+            "action": "LearnEveryDay"
+        },
+        {
+            "name": "ReadText",
+            "mask": ".*invoke_test.*",
+            "module": "./test_invoke/fs_test.js",
+            "action": "ReadText"
+        },
+        {
+            "name": "SqlTest1",
+            "mask": ".*invoke_test.*",
+            "module": "./util_ijoe_mysql.js",
+            "action": "RunSql",
+            "sql": "SELECT adv_id FROM cars LIMIT 10"
+        },
+        {
+            "name": "SqlTest2",
+            "mask": ".*invoke_test.*",
+            "module": "./util_ijoe_mysql.js",
+            "action": "RunSql",
+            "sql": "SELECT adv_id FROM cars LIMIT 10",
+            "formatAction": "FormatSqlToChange",
+            "formatModule": "./test_invoke/mysql_test.js"
+        }
+    ]
+```
+
+You can use **RunSql** with sql (named parameter, syntax :uriParameterName, and substitution with ecma strin literal - ${someSugar}).
+
+The RunSql handle **formatterAction** who can manipulate the result.
