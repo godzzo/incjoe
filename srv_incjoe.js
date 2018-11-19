@@ -88,17 +88,19 @@ async function IncludeJoe (ctx) {
 
         const content = {};
 
-        config.invokable.forEach( (setting) => {
+        for (const setting of config.invokable) {
             if ( new RegExp(setting.mask).test(url) ) {
-                LoadContent(setting, content, parms, ctx);
+                await LoadContent(setting, content, parms, ctx);
             }
-        });
+        };
 
-        ctx.response.body = InvokeContent( outPath, {content, config: {templateEngine: 'none'} } );
+        console.log("Invokable Contents: ", content);
+
+        ctx.response.body = InvokeContent( outPath, {content, config} );
     }
 }
 
-function LoadContent(setting, content, parms, ctx) {
+async function LoadContent(setting, content, parms, ctx) {
     if (!modules[setting.module]) {
         console.error(`Not found ${setting.module} module, for ( ${setting.mask} )!`, setting);
     }
@@ -108,7 +110,7 @@ function LoadContent(setting, content, parms, ctx) {
         }
         else {
             const action = modules[setting.module][setting.action];
-            content[setting.name] = action(parms, ctx);
+            content[setting.name] = await action(parms, ctx, setting, config);
         }
     }
 }

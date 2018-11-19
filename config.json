@@ -1,4 +1,12 @@
 {
+    "db": {
+        "host": "localhost",
+        "port": 7306,
+        "database": "db",
+        "user": "user",
+        "password": "password"
+    },
+    "templateEngine": "none",
     "invokable": [
         {
             "name": "EatLess",
@@ -23,6 +31,22 @@
             "mask": ".*invoke_test.*",
             "module": "./test_invoke/fs_test.js",
             "action": "ReadText"
+        },
+        {
+            "name": "SqlTest1",
+            "mask": ".*invoke_test.*",
+            "module": "./util_ijoe_mysql.js",
+            "action": "RunSql",
+            "sql": "SELECT adv_id FROM cars LIMIT 10"
+        },
+        {
+            "name": "SqlTest2",
+            "mask": ".*invoke_test.*",
+            "module": "./util_ijoe_mysql.js",
+            "action": "RunSql",
+            "sql": "SELECT adv_id FROM cars LIMIT 10",
+            "formatAction": "FormatSqlToChange",
+            "formatModule": "./test_invoke/mysql_test.js"
         }
     ]
 }

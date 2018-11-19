@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 
-function ReadText(parms, ctx) {
+async function ReadText(parms, ctx, setting) {
     if (parms.fileName) {
         return fs.readFileSync(parms.fileName);
     } else {

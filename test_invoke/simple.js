@@ -1,15 +1,15 @@
 
 'use strict'
 
-function EatLess(parms, ctx) {
+async function EatLess(parms, ctx, setting) {
     return JSON.stringify({msg: 'EatLess', name: 'Joe'});
 }
 
-function ExerciseMore(parms, ctx) {
+async function ExerciseMore(parms, ctx, setting) {
     return JSON.stringify({msg: 'ExerciseMore', name: 'Johanna'});
 }
 
-function LearnEveryDay(parms, ctx) {
+function LearnEveryDay(parms, ctx, setting) {
     return JSON.stringify({msg: 'LearnEveryDay', name: 'Eva'});
 }
 
