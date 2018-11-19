@@ -1,0 +1,28 @@
+{
+    "invokable": [
+        {
+            "name": "EatLess",
+            "mask": ".*invoke_test.*",
+            "module": "./test_invoke/simple.js",
+            "action": "EatLess"
+        },
+        {
+            "name": "ExerciseMore",
+            "mask": ".*invoke_test.*",
+            "module": "./test_invoke/simple.js",
+            "action": "ExerciseMore"
+        },
+        {
+            "name": "LearnEveryDay",
+            "mask": ".*invoke_test.*",
+            "module": "./test_invoke/simple.js",
+            "action": "LearnEveryDay"
+        },
+        {
+            "name": "ReadText",
+            "mask": ".*invoke_test.*",
+            "module": "./test_invoke/fs_test.js",
+            "action": "ReadText"
+        }
+    ]
+}

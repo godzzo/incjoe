@@ -53,6 +53,12 @@ function ParseFile(inPath, outPath, parms, rootPath='.') {
     fs.writeFileSync(outPath, full);
 }
 
+function InvokeContent(path, ctx) {
+    const full = LoadFile(path, undefined, ParseInvokeTag, ParseInvoke, 'invoke', undefined, ctx);
+
+    return full;
+}
+
 function LateParse(content, ctx) {
     content = content.replace(
         '<script id="templates"></script>', 
@@ -60,6 +66,23 @@ function LateParse(content, ctx) {
     );
     
     return content;
+}
+
+function ParseInvokeTag(el) {
+    const name = el.getAttribute("name");
+    
+    return {name};
+}
+
+function ParseInvoke(filePath, pel, ctx) {
+    if (ctx.content[pel.name]) {
+        
+        return ctx.content[pel.name];
+    } else {
+        console.error(`Invoke content not found ${pel.name}!`, ctx);
+
+        return "";
+    }
 }
 
 function ParseLater(filePath, pel, ctx) {
@@ -309,5 +332,6 @@ module.exports = {
     ReplaceKeys,
     JsonFromFile,
     LateParse,
-    ParseFile
+    ParseFile,
+    InvokeContent
 };
