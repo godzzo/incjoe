@@ -328,7 +328,12 @@ You can substitute a QueryString parameters as **ctx.parms**.name in your templa
 
 Joe could call server side logic for substitute the `<invoke name="EatLess"></invoke>` tags by name.
 
-Some static and one mysql and one mysql with formatter invokation
+Examples of:
+- statics (just return string - simple) - **EatLess, ExerciseMore, LearnEveryDay**
+- file content by QueryString fileName parameter - **ReadText**
+- mysql query and json result - **SqlTest1**
+- mysql query with json result, and after that format by some function - **SqlTest2**
+
 www/samples/album/**tp_invoke_test.html**
 ```html
 <div id="EatLess">
