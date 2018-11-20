@@ -13,6 +13,7 @@
 - [Web JOE](#web-joe)
 - [Server JOE with QS parms substitution](#server-joe-with-qs-parms-substitution)
 - [Server JOE with invokation](#server-joe-with-invokation)
+- [Using JavaScript engine](#using-javascript-engine)
 
 ## Simple
 
@@ -406,3 +407,36 @@ The needed configuration for this:
 You can use **RunSql** with sql (named parameter, syntax :uriParameterName, and substitution with ecma strin literal - ${someSugar}).
 
 The RunSql handle **formatterAction** who can manipulate the result.
+
+## Using JavaScript engine
+
+### Adding data for another templates by JavaScript
+
+Adding data for other include tags (you can access this data with **include variable="test_data"**):
+
+```html
+	<include engine="javascript">
+		ctx.data.test_data = {name: "Fred Fragment", age: 22, type: "normal"};
+	</include>
+```
+
+Using this data (*test_data*) in template:
+```html
+<include variable="test_data" engine="mustache">
+	<h2> Name: {{ name }}, Age: {{ age }}, Type: {{ type }} </h2>
+</include>
+```
+
+### Adding content for another templates by JavaScript
+
+Setting up an html content (named as *test_content*) for other includes:
+```html
+<include engine="javascript">
+	ctx.content.test_content = "<h3>What's Up? I am a JS generated content!</h3>";
+</include>
+```
+
+Using it in an other include tag:
+```html
+<include content="test_content"></include>
+```
