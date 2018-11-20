@@ -13,15 +13,7 @@ $(() => {
             const toSel = el.data('incjoe-target');
             const template = GetTemplateName(el, toSel);
 
-            if (action == 'append') {
-                FormAppendTo(form[0], template, toSel);
-            } else if (action == 'prepend') {
-                FormPrependTo(form[0], template, toSel);
-            } else if (action == 'replace') {
-                FormReplace(form[0], template, toSel);
-            } else {
-                console.error(`incjoe-submit : Action not supported ${action} !`);
-            }
+            FormSave(form[0], template, toSel, action);
     
             const modal = el.closest( "[role='dialog']" );
 
@@ -58,28 +50,22 @@ function RenderTemplate(name, data) {
     return Mustache.to_html( GetTemplate(name), data );
 }
 
-function FormAppendTo(form, template, toSel) {
+function FormSave(form, template, toSel, action) {
     const data = FormToData(form);
+
+    data.template = template;
+    data._position = -1;
+    data._time = new Date().getTime();
 
     const content = RenderTemplate(template, data);
 
-    $(toSel).append(content);
-}
-
-function FormPrependTo(form, template, toSel) {
-    const data = FormToData(form);
-
-    const content = RenderTemplate(template, data);
-
-    $(toSel).prepend(content);
-}
-
-function FormReplace(form, template, toSel) {
-    const data = FormToData(form);
-
-    const content = RenderTemplate(template, data);
-
-    $(toSel).html(content);
+    if (action == 'append') {
+        $(toSel).append(content);
+    } else if (action == 'prepend') {
+        $(toSel).prepend(content);
+    } else {
+        $(toSel).html(content);
+    }
 }
 
 function FormToData(form) {

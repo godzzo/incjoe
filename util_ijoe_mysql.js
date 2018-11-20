@@ -1,6 +1,7 @@
 'use strict'
 
 const db = require('./util_mysql.js');
+const CallAction = require('./util_common.js').CallAction;
 
 /*
     parms - Parsed QueryString
@@ -13,25 +14,19 @@ const db = require('./util_mysql.js');
     - formatAction - function name of result formatter
     - stringify    - we have to do the json result
  */
-async function RunSql (parms, ctx, setting, config) {
-    const sql = eval('`' + setting.sql + '`');
+async function RunSql (obj) {
+    const sql = eval('`' + obj.setting.sql + '`');
 
-    let results = await db.queryAsync(config.db, sql, parms);
+    obj.results = await db.queryAsync(obj.config.db, sql, obj.parms);
 
-    if (setting.formatModule && setting.formatAction) {
-        const mdl = require(setting.formatModule);
+    console.log(`BEFORE: RunSql format results`, obj);
+    await CallAction(obj.setting.formatModule, obj.setting.formatAction, obj);
+    console.log(`AFTER: RunSql format results`, obj);
 
-        console.log(`BEFORE: RunSql format ${setting.formatModule} / ${setting.formatAction}`, results);
-
-        results = await mdl[setting.formatAction](parms, ctx, setting, config, results);
-
-        console.log(`AFTER: RunSql format ${setting.formatModule} / ${setting.formatAction}`, results);
-    }
-
-    if (setting.notStringify) {
-        return results;
+    if (obj.setting.notStringify) {
+        return obj.results;
     } else {
-        return JSON.stringify(results);
+        return JSON.stringify(obj.results);
     }
 }
 

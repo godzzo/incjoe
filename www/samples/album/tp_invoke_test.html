@@ -2,11 +2,29 @@
 
 <body>
 
+	<include engine="javascript">
+		ctx.data.test_data = {name: "Fred Fragment", age: 22, type: "normal"};
+	</include>
+
+	<include engine="javascript">
+		ctx.content.test_content = "<h3>What's Up? I am a JS generated content!</h3>";
+	</include>
+	
     <include src="fragment/header.html"></include>
 
     <main role="main">
 
         <include src="fragment/info.html"></include>
+
+		<include variable="test_data" engine="mustache">
+			<h2> Name: {{ name }}, Age: {{ age }}, Type: {{ type }} </h2>
+		</include>
+
+		<include content="test_content"></include>
+
+		<ul>
+<include data="data/items.json" engine="mustache"><li name="{{ created_date }}">{{ text }}</li></include>
+		</ul>
 
         <div id="EatLess">
             <invoke name="EatLess"></invoke>

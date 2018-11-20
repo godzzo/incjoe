@@ -15,7 +15,9 @@ function InitContext(inPath, parms, rootPath) {
     const ctx = {
         templates: {},
         js: {},
-        css: {},
+		css: {},
+		data: {},
+		content: {},
         parms: parms,
         rootPath
     };
@@ -116,19 +118,21 @@ function ParseLaterTag(el) {
     return {name};
 }
 
-function ParseIncludeTag(el) {
+function ParseIncludeTag(el, inner) {
     const src = el.getAttribute("src");
     const data = el.getAttribute("data");
     const parms = el.getAttribute("parms");
     const name = el.getAttribute("name");
-    const engine = el.getAttribute("engine");
+	const engine = el.getAttribute("engine");
+	const variable = el.getAttribute("variable");
+	const content = el.getAttribute("content");
 
-    const inner = el.innerHTML;
+    // const inner = el.innerHTML;
 
-    return {src, data, parms, name, inner, engine};
+    return {src, data, parms, name, inner, engine, variable, content};
 }
 
-function LoadFile(filePath, json, parseTag, fnc, tagName='include', templateEngine, ctx) {
+function LoadFile(filePath, json, parseTagFnc, parserFnc, tagName='include', templateEngine, ctx) {
     if ( ! templateEngine ) {
         templateEngine = ctx.config.templateEngine;
     }
@@ -141,29 +145,7 @@ function LoadFile(filePath, json, parseTag, fnc, tagName='include', templateEngi
     const content = [];
 
     while (text.indexOf(beginTag) > -1) {
-        const pos = text.indexOf(beginTag);
-    
-        content.push( text.substring(0, pos) );
-    
-        text = text.substring(pos);
-    
-        const after = text.indexOf(endTag);
-    
-        const incTag = text.substring(0, after + endTag.length);
-
-        console.log( 'PARSE', incTag );
-
-        const dom = parser.parseFromString(incTag);
-
-        const el = dom.getElementsByTagName(tagName)[0];
-
-        const parsedEl = parseTag(el);
-
-        console.log( 'attrs', parsedEl );
-
-        content.push( fnc(filePath, parsedEl, ctx) );
-        
-        text = text.substring(after + endTag.length);
+        text = LoadFileTextHandling(text, tagName, beginTag, endTag, content, parseTagFnc, parserFnc, filePath, ctx);
     }
 
     if (text.length > 0) {
@@ -172,9 +154,53 @@ function LoadFile(filePath, json, parseTag, fnc, tagName='include', templateEngi
 
     let html = content.join("");
 
-    html = ReplaceKeys(html, json, templateEngine);
+    html = ReplaceKeys(html, json, templateEngine, ctx);
 
     return html;
+}
+
+function LoadFileTextHandling(text, tagName, beginTag, endTag, content, parseTagFnc, parserFnc, filePath, ctx) {
+	const pos = text.indexOf(beginTag);
+	
+	content.push(text.substring(0, pos));
+	
+	text = text.substring(pos);
+
+	const tagClosePos = text.indexOf('>');
+
+	const beginTagContent = text.substring(0, tagClosePos+1);
+	text = text.substring(tagClosePos+1);
+
+	const after = text.indexOf(endTag);
+
+	const innerContent = text.substring(0, after);
+	text = text.substring(after);
+
+	const incTag = beginTagContent + endTag;
+
+	console.log('incTag', incTag);
+	console.log('innerContent', innerContent);
+
+	const parsedEl = parseElement(incTag, tagName, parseTagFnc, innerContent);
+
+	content.push( parserFnc(filePath, parsedEl, ctx) );
+	
+	text = text.substring(endTag.length);
+
+	return text;
+}
+
+function parseElement(incTag, tagName, parseTagFnc, innerContent) {
+	console.log('PARSE', incTag);
+	console.log('INNER', innerContent);
+
+    const dom = parser.parseFromString(incTag);
+    const el = dom.getElementsByTagName(tagName)[0];
+    const parsedEl = parseTagFnc(el, innerContent);
+
+    console.log('attrs', parsedEl);
+
+    return parsedEl;
 }
 
 function ReadContent(filePath, ctx) {
@@ -228,58 +254,79 @@ function ParseInclude(filePath, pel, ctx) {
         pel.name = pel.src;
     }
 
+    // TODO: Handle parms array selector for example: '|'
+    ParseIncludeParseParms(pel, parmsObj);
+
+	// content
+
+	if (pel.data && pel.data != null) {
+		jsonData = JsonFromFile (pel.data, ctx);
+
+	} else if (pel.variable) {
+		if ( ! ctx.data[pel.variable] ) { console.error(`Variable not found ${pel.variable}!`); }
+
+		jsonData = ctx.data[pel.variable];
+	}
+
+	let content = "";
+
+	if (pel.content) {
+		if ( ! ctx.content[pel.content] ) { console.error(`Content not found ${pel.content}!`); }
+
+		content = ctx.content[pel.content];
+	} else {
+
+		content = ParseIncludeMakeContent(jsonData, parmsObj, ctx, pel);
+	}
+
+	return content;
+}
+
+function ParseIncludeParseParms(pel, parmsObj) {
     if (pel.parms) {
         const keyVals = pel.parms.split(/;/g);
 
         for (const keyVal of keyVals) {
             const keyTags = keyVal.split(/\:/g);
 
-            parmsObj[ keyTags[0] ] = keyTags[1];
+            parmsObj[keyTags[0]] = keyTags[1];
         }
     }
+}
 
-    if (pel.data && pel.data != null) {
-        jsonData = JsonFromFile (pel.data, ctx);
-    }
-
+function ParseIncludeMakeContent(jsonData, parmsObj, ctx, pel) {
     let content;
 
     if (Array.isArray(jsonData)) {
         const contents = [];
-
-        let i= 0;
+        let i = 0;
 
         for (const jsonItem of jsonData) {
             i++;
-            // jsonItem.parms = parmsObj;
-            const json = Object.assign(jsonItem, parmsObj);
-            json.config = ctx.config;
-            json.ctx = ctx;
-            json.template = pel.name;
-            json._position = i;
-            json._time = new Date().getTime();
-
-            ctx.templates[pel.name] = escape( ReadContent(pel.src, ctx) );
-
-            content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude, 'include', pel.engine, ctx);
-
+            content = ParseIncludeLoadFile(jsonItem, parmsObj, ctx, pel, i);
             contents.push(content);
         }
 
         content = contents.join('');
     } else {
-
-        // jsonData.parms = parmsObj;
-        const json = Object.assign(jsonData, parmsObj);
-        json.config = ctx.config;
-        json.ctx = ctx;
-        json.template = pel.name;
-        json._time = new Date().getTime();
-
-        ctx.templates[pel.name] = escape( ReadContent(pel.src, ctx) );
-
-        content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude, 'include', pel.engine, ctx);
+        content = ParseIncludeLoadFile(jsonData, parmsObj, ctx, pel, 1);
     }
+    
+    return content;
+}
+
+function ParseIncludeLoadFile(jsonItem, parmsObj, ctx, pel, i) {
+    const json = Object.assign(jsonItem, parmsObj);
+
+    json.config = ctx.config;
+    json.ctx = ctx;
+    json.template = pel.name;
+    json._time = new Date().getTime();
+    json._position = i;
+
+    ctx.templates[pel.name] = escape( ReadContent(pel.src, ctx) );
+
+    const content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude, 'include', pel.engine, ctx);
 
     return content;
 }
@@ -301,7 +348,7 @@ function JsonFromFile (filePath, ctx) {
     return data;
 }
 
-function ReplaceKeys(content, data, templateEngine) {
+function ReplaceKeys(content, data, templateEngine, ctx) {
     if (data) {
         let rendered;
 
@@ -313,6 +360,8 @@ function ReplaceKeys(content, data, templateEngine) {
             rendered = eval('`' + content + '`');
         } else if (templateEngine == "ejs") {
             rendered = ejs.render(content, data);
+        } else if (templateEngine == "javascript") {
+            rendered = eval(content);
         } else {
             console.log(`Template not used, for this one.`);
             
@@ -326,6 +375,14 @@ function ReplaceKeys(content, data, templateEngine) {
     }
 }
 
+async function CallAction(module, action, obj) {
+    if (module && action) {
+        const mdl = require(module);
+
+        return await mdl[action](obj);
+    }
+}
+
 module.exports = {
     LoadFile,
     ParseInclude,
@@ -333,5 +390,6 @@ module.exports = {
     JsonFromFile,
     LateParse,
     ParseFile,
-    InvokeContent
+    InvokeContent,
+    CallAction
 };

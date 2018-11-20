@@ -3,9 +3,18 @@
 
 const fs = require('fs');
 
-async function ReadText(parms, ctx, setting) {
-    if (parms.fileName) {
-        return fs.readFileSync(parms.fileName);
+/*
+    obj:
+        parms - Parsed QueryString
+        ctx - request context
+        setting - config invoke setting
+        config - main config
+        results - mysql result array
+ */
+
+async function ReadText(obj) {
+    if (obj.parms.fileName) {
+        return fs.readFileSync(obj.parms.fileName);
     } else {
         return "";
     }

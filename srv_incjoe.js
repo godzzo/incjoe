@@ -90,6 +90,7 @@ async function IncludeJoe (ctx) {
 
         for (const setting of config.invokable) {
             if ( new RegExp(setting.mask).test(url) ) {
+                // Here was a funy incident without await, the contents not loaded, and the Invoke called :)
                 await LoadContent(setting, content, parms, ctx);
             }
         };
@@ -110,7 +111,8 @@ async function LoadContent(setting, content, parms, ctx) {
         }
         else {
             const action = modules[setting.module][setting.action];
-            content[setting.name] = await action(parms, ctx, setting, config);
+            
+            content[setting.name] = await action( {parms, ctx, setting, config} );
         }
     }
 }
