@@ -14,8 +14,8 @@ const InvokeContent = require('./util_common.js').InvokeContent;
 
 const Koa = require('koa');
 
-const {docRoot, port, configPath} = InitArguments();
-const config = InitConfig(configPath);
+const {docRoot, port, appRoot, config} = InitArguments();
+
 const modules = InitModules(config);
 
 const app = new Koa();
@@ -80,39 +80,76 @@ async function IncludeJoe (ctx) {
     const parms = ParseQueryString(ctx);
 
     if ( fs.existsSync(templatePath) ) {
-        if (parms.gen) {
+		
+        if (parms.gen && config.srv.mode != 'POST_GEN') {
             console.log('Include!', {templatePath, outPath, parms});
 
             ParseFile(templatePath, outPath, parms, templateRoot);
         }
 
-        const content = {};
+        const {content, data} = await InvokeContents(url, parms, ctx);
 
-        for (const setting of config.invokable) {
-            if ( new RegExp(setting.mask).test(url) ) {
-                // Here was a funy incident without await, the contents not loaded, and the Invoke called :)
-                await LoadContent(setting, content, parms, ctx);
-            }
-        };
+        console.log("Invokable Contents: ", {content, data});
 
-        console.log("Invokable Contents: ", content);
+		// 'inner:'
+		if (config.srv.mode == 'POST_GEN') {
+			const body = ParseFile(templatePath, outPath, parms, templateRoot, true, {content, data});
 
-        ctx.response.body = InvokeContent( outPath, {content, config} );
+			ctx.response.body = InvokeContent( 'inner:' + body, {content, data, config} );
+		} else {
+			ctx.response.body = InvokeContent( outPath, {content, config} );
+		}
+
     }
 }
 
-async function LoadContent(setting, content, parms, ctx) {
+async function InvokeContents(url, parms, ctx) {
+	const content = {};
+	const data = {};
+
+	for (const setting of config.invokable) {
+
+		if (new RegExp(setting.mask).test(url)) {
+
+			// Here was a funy incident without await, the contents not loaded, and the Invoke called :)
+			await LoadContent(setting, content, data, parms, ctx);
+		}
+	}
+
+	return {content, data};
+}
+
+async function LoadContent(setting, content, data, parms, ctx) {
     if (!modules[setting.module]) {
         console.error(`Not found ${setting.module} module, for ( ${setting.mask} )!`, setting);
-    }
-    else {
+    } else {
         if (!modules[setting.module][setting.action]) {
             console.error(`Not found ${setting.action} action, for ( ${setting.mask} )!`, setting);
         }
         else {
+			console.log(`LoadContent ${setting.module} :: ${setting.action}`);
+
             const action = modules[setting.module][setting.action];
-            
-            content[setting.name] = await action( {parms, ctx, setting, config} );
+			
+			let response;
+
+			try {
+				response = await action( {parms, ctx, setting, config, content, data} );
+			} catch (error) {
+				console.error(error);
+			}
+			
+			console.log('LoadContent response', {response, setting});
+
+			if (response) {
+				if (setting.contentType && setting.contentType == 'object') {
+					data[setting.name] = response;
+				} else {
+					content[setting.name] = response;
+				}
+			}
+
+			console.log('LoadContent SET', {content, data});
         }
     }
 }
@@ -156,11 +193,24 @@ function InitModules(config) {
 }
 
 function InitArguments() {
-    const docRoot = process.argv.length > 2? process.argv[2]: './www';
-    const port = process.argv.length > 3? parseInt(process.argv[3]): 7722;
-    const configPath = process.argv.length > 4? process.argv[4]: './config.json';
+    const configPath = process.argv.length > 2? process.argv[2]: './config.json';
+    let docRoot = process.argv.length > 3? process.argv[3]: './www';
+	let port = process.argv.length > 4? parseInt(process.argv[4]): 7722;
+	let appRoot = process.argv.length > 5? parseInt(process.argv[5]): './app';
 
-    console.log('Arguments: ', {docRoot, port, configPath});
+	const config = InitConfig(configPath);
 
-    return {docRoot, port, configPath};
+	if (config.srv) {
+		docRoot = config.srv.docRoot;
+		port = config.srv.port;
+		appRoot = config.srv.appRoot;
+	}
+
+	if (! config.srv.mode) {
+		config.srv.mode = 'DEFAULT'; // POST_GEN
+	}
+
+    console.log('Arguments: ', JSON.stringify({docRoot, port, appRoot, config}, null, 4));
+
+    return {docRoot, port, appRoot, config};
 }

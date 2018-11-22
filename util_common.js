@@ -11,8 +11,10 @@ const DomParser = require('dom-parser');
 
 const parser = new DomParser();
 
-function InitContext(inPath, parms, rootPath) {
-    const ctx = {
+function InitContext(inPath, parms, rootPath, extra) {
+	console.log("InitContext, extra", JSON.stringify(extra, null, 4));
+
+    let ctx = {
         templates: {},
         js: {},
 		css: {},
@@ -37,22 +39,28 @@ function InitContext(inPath, parms, rootPath) {
     
     ctx.config = config;
 
+	ctx = Object.assign(ctx, extra);
+
+	console.log("InitContext, ctx", JSON.stringify(ctx, null, 4));
+
     return ctx;
 }
 
-function ParseFile(inPath, outPath, parms, rootPath='.') {
+function ParseFile(inPath, outPath, parms, rootPath='.', onDemand=false, extra={}) {
 
-    const ctx = InitContext(inPath, parms, rootPath);
+    const ctx = InitContext(inPath, parms, rootPath, extra);
 
     let full = LoadFile(inPath, undefined, ParseIncludeTag, ParseInclude, 'include', undefined, ctx);
 
-    fs.writeFileSync(outPath, full);
-
-    full = LoadFile(outPath, undefined, ParseLaterTag, ParseLater, 'later', undefined, ctx);
+    full = LoadFile('inner:' + full, undefined, ParseLaterTag, ParseLater, 'later', undefined, ctx);
 
     full = LateParse(full, ctx);
 
-    fs.writeFileSync(outPath, full);
+	if (!onDemand) {
+		fs.writeFileSync(outPath, full);
+	} else {
+		return full;
+	}
 }
 
 function InvokeContent(path, ctx) {
