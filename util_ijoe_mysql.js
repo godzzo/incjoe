@@ -30,6 +30,16 @@ async function RunSql (obj) {
     }
 }
 
+function pInt(value, defValue) {
+	let intVal = parseInt(value);
+
+	if (isNaN(intVal)) {
+		intVal = defValue;
+	}
+
+	return intVal;
+}
+
 module.exports = {
     RunSql
 };
