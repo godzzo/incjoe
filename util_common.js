@@ -276,6 +276,8 @@ function ParseInclude(filePath, pel, ctx) {
 		jsonData = ctx.data[pel.variable];
 	}
 
+	console.log("jsonData is "+typeof(jsonData), JSON.stringify(jsonData, null, 4));
+
 	let content = "";
 
 	if (pel.content) {

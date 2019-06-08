@@ -1,0 +1,27 @@
+{
+	"srv": {
+		"docRoot": "./sakila/www",
+		"port": 8822,
+		"appRoot": "./sakila/app",
+		"mode": "POST_GEN"
+	},
+	"db": {
+        "host": "localhost",
+        "port": 3306,
+        "database": "sakila",
+        "user": "user",
+        "password": "pwd"
+    },
+    "templateEngine": "none",
+    "invokable": [
+        {
+            "name": "actors",
+            "mask": ".*actors.*",
+			"sql": "SELECT * FROM actor LIMIT 10",
+			"contentType": "object",
+			"notStringify": true,
+            "module": "./util_ijoe_mysql.js",
+            "action": "RunSql"
+        }
+    ]
+}

@@ -193,6 +193,8 @@ function InitModules(config) {
 }
 
 function InitArguments() {
+	console.log('process.argv', process.argv);
+
     const configPath = process.argv.length > 2? process.argv[2]: './config.json';
     let docRoot = process.argv.length > 3? process.argv[3]: './www';
 	let port = process.argv.length > 4? parseInt(process.argv[4]): 7722;
