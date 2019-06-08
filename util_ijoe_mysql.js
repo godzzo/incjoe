@@ -1,5 +1,7 @@
 'use strict'
 
+const fs = require('fs');
+
 const db = require('./util_mysql.js');
 const CallAction = require('./util_common.js').CallAction;
 
@@ -15,7 +17,7 @@ const CallAction = require('./util_common.js').CallAction;
     - stringify    - we have to do the json result
  */
 async function RunSql (obj) {
-    const sql = eval('`' + obj.setting.sql + '`');
+    const sql = await ParseSql(obj);
 
     obj.results = await db.queryAsync(obj.config.db, sql, obj.parms);
 
@@ -28,6 +30,21 @@ async function RunSql (obj) {
     } else {
         return JSON.stringify(obj.results);
     }
+}
+
+async function ParseSql (obj) {
+	let sql = eval('`' + obj.setting.sql + '`');
+	
+	if (sql.endsWith(".sql")) {
+		console.log('load sql file', sql);
+		sql = fs.readFileSync(sql) + '';
+
+		sql = eval('`' + sql + '`');
+	}
+
+	console.log('sql', sql);
+
+	return sql;
 }
 
 function pInt(value, defValue) {

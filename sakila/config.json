@@ -17,7 +17,7 @@
         {
             "name": "actors",
             "mask": ".*actors.*",
-			"sql": "SELECT * FROM actor LIMIT ${pInt(obj.parms.limit, 100)} OFFSET ${pInt(obj.parms.offset, 0)}",
+			"sql": "${obj.config.srv.appRoot}/sql/actors.sql",
 			"contentType": "object",
 			"notStringify": true,
             "module": "./util_ijoe_mysql.js",
