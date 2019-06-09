@@ -84,7 +84,7 @@ async function IncludeJoe (ctx) {
         if (parms.gen && config.srv.mode != 'POST_GEN') {
             console.log('Include!', {templatePath, outPath, parms});
 
-            ParseFile(templatePath, outPath, parms, templateRoot);
+            await ParseFile(templatePath, outPath, parms, templateRoot);
         }
 
         const {content, data} = await InvokeContents(url, parms, ctx);
@@ -93,14 +93,31 @@ async function IncludeJoe (ctx) {
 
 		// 'inner:'
 		if (config.srv.mode == 'POST_GEN') {
-			const body = ParseFile(templatePath, outPath, parms, templateRoot, true, {content, data});
+			const body = await ParseFile(
+				templatePath, outPath, parms, templateRoot, true, 
+				{content, data, invoke: async (actionName, incParms) => {
+					return await InvokeAction(actionName,  {...parms, ...incParms}, ctx);
+				}});
 
-			ctx.response.body = InvokeContent( 'inner:' + body, {content, data, config} );
+			ctx.response.body = await InvokeContent( 'inner:' + body, {content, data, config} );
 		} else {
-			ctx.response.body = InvokeContent( outPath, {content, config} );
+			ctx.response.body = await InvokeContent( outPath, {content, config} );
 		}
 
     }
+}
+
+async function InvokeAction(name, parms, ctx) {
+	const data = {};
+	const setting = config.invokable.find(el => el.name == name);
+
+	if (!setting) {
+		console.error(`Invokable action not found: ${name} )!`, config.invokable);
+	} else {
+		await LoadContent(setting, null, data, parms, ctx);
+	}
+
+	return data[name];
 }
 
 async function InvokeContents(url, parms, ctx) {
@@ -125,8 +142,7 @@ async function LoadContent(setting, content, data, parms, ctx) {
     } else {
         if (!modules[setting.module][setting.action]) {
             console.error(`Not found ${setting.action} action, for ( ${setting.mask} )!`, setting);
-        }
-        else {
+        } else {
 			console.log(`LoadContent ${setting.module} :: ${setting.action}`);
 
             const action = modules[setting.module][setting.action];

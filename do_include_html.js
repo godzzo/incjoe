@@ -15,4 +15,6 @@ if (process.argv.length > 3) {
     outPath = "bstrap/album.html";
 }
 
-ParseFile(inPath, outPath);
+(async () => {
+	await ParseFile(inPath, outPath);
+})();

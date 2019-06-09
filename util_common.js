@@ -46,13 +46,13 @@ function InitContext(inPath, parms, rootPath, extra) {
     return ctx;
 }
 
-function ParseFile(inPath, outPath, parms, rootPath='.', onDemand=false, extra={}) {
+async function ParseFile(inPath, outPath, parms, rootPath='.', onDemand=false, extra={}) {
 
     const ctx = InitContext(inPath, parms, rootPath, extra);
 
-    let full = LoadFile(inPath, undefined, ParseIncludeTag, ParseInclude, 'include', undefined, ctx);
+    let full = await LoadFile(inPath, undefined, ParseIncludeTag, ParseInclude, 'include', undefined, ctx);
 
-    full = LoadFile('inner:' + full, undefined, ParseLaterTag, ParseLater, 'later', undefined, ctx);
+    full = await LoadFile('inner:' + full, undefined, ParseLaterTag, ParseLater, 'later', undefined, ctx);
 
     full = LateParse(full, ctx);
 
@@ -63,8 +63,8 @@ function ParseFile(inPath, outPath, parms, rootPath='.', onDemand=false, extra={
 	}
 }
 
-function InvokeContent(path, ctx) {
-    const full = LoadFile(path, undefined, ParseInvokeTag, ParseInvoke, 'invoke', undefined, ctx);
+async function InvokeContent(path, ctx) {
+    const full = await LoadFile(path, undefined, ParseInvokeTag, ParseInvoke, 'invoke', undefined, ctx);
 
     return full;
 }
@@ -133,14 +133,15 @@ function ParseIncludeTag(el, inner) {
     const name = el.getAttribute("name");
 	const engine = el.getAttribute("engine");
 	const variable = el.getAttribute("variable");
+	const invoke = el.getAttribute("invoke");
 	const content = el.getAttribute("content");
 
     // const inner = el.innerHTML;
 
-    return {src, data, parms, name, inner, engine, variable, content};
+    return {src, data, parms, name, inner, engine, variable, invoke, content};
 }
 
-function LoadFile(filePath, json, parseTagFnc, parserFnc, tagName='include', templateEngine, ctx) {
+async function LoadFile(filePath, json, parseTagFnc, parserFnc, tagName='include', templateEngine, ctx) {
     if ( ! templateEngine ) {
         templateEngine = ctx.config.templateEngine;
     }
@@ -153,7 +154,7 @@ function LoadFile(filePath, json, parseTagFnc, parserFnc, tagName='include', tem
     const content = [];
 
     while (text.indexOf(beginTag) > -1) {
-        text = LoadFileTextHandling(text, tagName, beginTag, endTag, content, parseTagFnc, parserFnc, filePath, ctx);
+        text = await LoadFileTextHandling(text, tagName, beginTag, endTag, content, parseTagFnc, parserFnc, filePath, ctx);
     }
 
     if (text.length > 0) {
@@ -167,7 +168,7 @@ function LoadFile(filePath, json, parseTagFnc, parserFnc, tagName='include', tem
     return html;
 }
 
-function LoadFileTextHandling(text, tagName, beginTag, endTag, content, parseTagFnc, parserFnc, filePath, ctx) {
+async function LoadFileTextHandling(text, tagName, beginTag, endTag, content, parseTagFnc, parserFnc, filePath, ctx) {
 	const pos = text.indexOf(beginTag);
 	
 	content.push(text.substring(0, pos));
@@ -191,7 +192,7 @@ function LoadFileTextHandling(text, tagName, beginTag, endTag, content, parseTag
 
 	const parsedEl = parseElement(incTag, tagName, parseTagFnc, innerContent);
 
-	content.push( parserFnc(filePath, parsedEl, ctx) );
+	content.push( await parserFnc(filePath, parsedEl, ctx) );
 	
 	text = text.substring(endTag.length);
 
@@ -251,7 +252,7 @@ function ReadContent(filePath, ctx) {
     return content;
 }
 
-function ParseInclude(filePath, pel, ctx) {
+async function ParseInclude(filePath, pel, ctx) {
     let jsonData = {};
     let parmsObj = {};
 
@@ -274,6 +275,8 @@ function ParseInclude(filePath, pel, ctx) {
 		if ( ! ctx.data[pel.variable] ) { console.error(`Variable not found ${pel.variable}!`); }
 
 		jsonData = ctx.data[pel.variable];
+	} else if (pel.invoke) {
+		jsonData = await ctx.invoke(pel.invoke, parmsObj);
 	}
 
 	console.log("jsonData is "+typeof(jsonData), JSON.stringify(jsonData, null, 4));
@@ -286,7 +289,7 @@ function ParseInclude(filePath, pel, ctx) {
 		content = ctx.content[pel.content];
 	} else {
 
-		content = ParseIncludeMakeContent(jsonData, parmsObj, ctx, pel);
+		content = await ParseIncludeMakeContent(jsonData, parmsObj, ctx, pel);
 	}
 
 	return content;
@@ -304,7 +307,7 @@ function ParseIncludeParseParms(pel, parmsObj) {
     }
 }
 
-function ParseIncludeMakeContent(jsonData, parmsObj, ctx, pel) {
+async function ParseIncludeMakeContent(jsonData, parmsObj, ctx, pel) {
     let content;
 
     if (Array.isArray(jsonData)) {
@@ -313,19 +316,19 @@ function ParseIncludeMakeContent(jsonData, parmsObj, ctx, pel) {
 
         for (const jsonItem of jsonData) {
             i++;
-            content = ParseIncludeLoadFile(jsonItem, parmsObj, ctx, pel, i);
+            content = await ParseIncludeLoadFile(jsonItem, parmsObj, ctx, pel, i);
             contents.push(content);
         }
 
         content = contents.join('');
     } else {
-        content = ParseIncludeLoadFile(jsonData, parmsObj, ctx, pel, 1);
+        content = await ParseIncludeLoadFile(jsonData, parmsObj, ctx, pel, 1);
     }
     
     return content;
 }
 
-function ParseIncludeLoadFile(jsonItem, parmsObj, ctx, pel, i) {
+async function ParseIncludeLoadFile(jsonItem, parmsObj, ctx, pel, i) {
     const json = Object.assign(jsonItem, parmsObj);
 
     json.config = ctx.config;
@@ -336,7 +339,7 @@ function ParseIncludeLoadFile(jsonItem, parmsObj, ctx, pel, i) {
 
     ctx.templates[pel.name] = escape( ReadContent(pel.src, ctx) );
 
-    const content = LoadFile(pel.src, json, ParseIncludeTag, ParseInclude, 'include', pel.engine, ctx);
+    const content = await LoadFile(pel.src, json, ParseIncludeTag, ParseInclude, 'include', pel.engine, ctx);
 
     return content;
 }
