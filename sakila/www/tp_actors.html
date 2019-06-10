@@ -1,19 +1,20 @@
 
-<include invoke="actors" parms="limit:3">
+
+<include invoke="actors" parms="limit:5;some:thing Good" engine="ejs">
 	Invoke Test:
+	<%= ctx.parms.limit %>
 	<ul>
-	{{#.}}
-		<li>{{first_name}} {{ last_name }}</li>
-	{{/.}}
+	<% data.forEach(function(rec) { %>
+		<li><%= rec.first_name %> <%= rec.last_name %></li>
+	<% }) %>
 	</ul>
 </include>
 
 <include variable="actors">
 	Variable Test:
 	<ul>
-	{{#.}}
+	{{#rows}}
 		<li>{{first_name}} {{ last_name }}</li>
-	{{/.}}
+	{{/rows}}
 	</ul>
 </include>
-

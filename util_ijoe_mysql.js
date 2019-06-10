@@ -27,9 +27,9 @@ async function RunSql (obj) {
     console.log(`AFTER: RunSql format results`, obj);
 
     if (obj.setting.notStringify) {
-        return obj.results;
+        return {data: obj.results};
     } else {
-        return JSON.stringify(obj.results);
+        return JSON.stringify({data: obj.results});
     }
 }
 

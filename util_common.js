@@ -263,6 +263,8 @@ async function ParseInclude(filePath, pel, ctx) {
         pel.name = pel.src;
     }
 
+	console.log("::ctx:::", JSON.stringify(ctx, null, 4));
+
     // TODO: Handle parms array selector for example: '|'
     ParseIncludeParseParms(pel, parmsObj);
 
@@ -279,9 +281,12 @@ async function ParseInclude(filePath, pel, ctx) {
 		jsonData = await ctx.invoke(pel.invoke, parmsObj);
 	}
 
-	console.log("jsonData is "+typeof(jsonData), JSON.stringify(jsonData, null, 4));
+	// console.log("jsonData is "+typeof(jsonData), JSON.stringify(jsonData, null, 4));
 
 	let content = "";
+
+	jsonData.ctx = ctx;
+	jsonData.parms = parmsObj;
 
 	if (pel.content) {
 		if ( ! ctx.content[pel.content] ) { console.error(`Content not found ${pel.content}!`); }
