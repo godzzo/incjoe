@@ -17,9 +17,10 @@ const CallAction = require('./util_common.js').CallAction;
     - stringify    - we have to do the json result
  */
 async function RunSql (obj) {
-    const sql = await ParseSql(obj);
+	const sql = await ParseSql(obj);
+	const dbName = (obj.setting.dbName? obj.setting.dbName: 'db');
 
-    obj.results = await db.queryAsync(obj.config.db, sql, obj.parms);
+    obj.results = await db.queryAsync(obj.config[dbName], sql, obj.parms);
 
     console.log(`BEFORE: RunSql format results`, obj);
     await CallAction(obj.setting.formatModule, obj.setting.formatAction, obj);
