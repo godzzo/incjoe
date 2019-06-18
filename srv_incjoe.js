@@ -3,6 +3,7 @@
 
 'use strict'
 
+const session = require('koa-session');
 const serve = require('koa-static');
 const logger = require('koa-logger');
 const fs = require('fs');
@@ -22,7 +23,15 @@ const app = new Koa();
 
 app.use( logger() );
 
-// app.use( (ctx, next) => BaseCall(ctx, next, TestOne) );
+app.keys = ['Includer_JOE_koa_webservice'];
+
+const sessionConfig = {
+	key: 'koa:sess', maxAge: 86400000, httpOnly: true, rolling: false, renew: false
+};
+
+app.use( session(sessionConfig, app) );
+
+app.use( (ctx, next) => BaseCall(ctx, next, TestOne) );
 app.use( (ctx, next) => BaseCall(ctx, next, IncludeJoe) );
 
 app.use( serve(docRoot) );
@@ -40,8 +49,15 @@ async function BaseCall(ctx, next, cb){
     }
 }
 
-async function TestOne (ctx) {
-    
+async function TestOne(ctx) {
+
+    console.log('session', ctx.session);
+
+	ctx.session.working = ctx.session.working || 0;
+	ctx.session.working++;
+
+	console.log('session', ctx.session);
+
     console.log('url', ctx.request.url);
     
     const fileName = path.basename(ctx.request.url).replace(/\?.*/g, '');
@@ -89,6 +105,8 @@ async function IncludeJoe (ctx) {
 
         const {content, data} = await InvokeContents(url, parms, ctx);
 
+		data.session = ctx.session;
+
         console.log("Invokable Contents: ", {content, data});
 
 		// 'inner:'
@@ -96,7 +114,7 @@ async function IncludeJoe (ctx) {
 			const body = await ParseFile(
 				templatePath, outPath, parms, templateRoot, true, 
 				{content, data, invoke: async (actionName, incParms) => {
-					return await InvokeAction(actionName,  {...parms, ...incParms}, ctx);
+					return await InvokeAction(actionName,  {...parms, ...ctx.session, ...incParms}, ctx);
 				}});
 
 			ctx.response.body = await InvokeContent( 'inner:' + body, {content, data, config} );

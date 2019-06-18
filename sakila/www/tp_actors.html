@@ -1,6 +1,14 @@
 
+<include engine="javascript">
+	ctx.data.session.count = ctx.data.session.count || 0;
+	ctx.data.session.count++;
+
+	console.log('!!!!!!!!!!!!ctx', JSON.stringify(ctx, null, 4));
+</include>
 
 <include invoke="actors" parms="limit:5;some:thing Good" engine="ejs">
+	Session Count: 
+	<%= ctx.data.session.working %> -- <%= ctx.data.session.count %><br/>
 	Invoke Test:
 	<%= ctx.parms.limit %>
 	<ul>
