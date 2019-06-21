@@ -7,19 +7,59 @@ const util = require('util');
 function OpenConnection(config) {
     const connection = mysql.createConnection(config);
 
-    connection.connect();
+    connection.on('error', function (err) {
+        console.log('onerror, caught mysql connection error: ' + err.toString());
+    });
+
+    connection.connect( (err) => {
+        if (err) {
+            console.error('callback, error connecting: ' + err.stack);
+
+            return;
+        }
+
+        console.log('connected as id ' + connection.threadId);
+    });
 
     connection.config.queryFormat = NamedParmsQueryFormat;
 
     return connection;
 }
 
+function GenerateInsert(table, data) {
+    const names = [];
+    const parms = [];
+
+    Object.keys(data).forEach( (key) => {
+        names.push(key);
+        parms.push(":"+key);
+    } );
+
+    const insertSql = `INSERT INTO ${table} (${names.join(',')}) VALUES (${parms.join(',')});`;
+
+    return insertSql;
+}
+
+function GenerateUpdate(table, data, primaryKey) {
+    const parms = [];
+
+    Object.keys(data).forEach( (key) => {
+        if (key != primaryKey) {
+            parms.push(`${key} = :${key}`);
+        }
+    } );
+
+    const updateSql = `UPDATE ${table} SET ${parms.join(',')} WHERE ${primaryKey} = :${primaryKey} ;`;
+
+    return updateSql;
+}
+
+
 function RunQuery(config, sql, parms, cb) {
     const connection = OpenConnection(config);
 
     connection.query(sql, parms, (error, result, fields) => {
         console.log( JSON.stringify( result ) );
-
         cb(results);
 
         connection.destroy();
@@ -27,20 +67,35 @@ function RunQuery(config, sql, parms, cb) {
 }
 
 async function RunQueryAsync(config, sql, parms) {
-    const connection = OpenConnection(config);
+	try {
+		const connection = OpenConnection(config);
+		connection.query = util.promisify(connection.query);
 
-    console.log( 'SQL', sql );
-    console.log( 'PARMS', JSON.stringify( parms ) );
+		const results = await connection.query(sql, parms);
 
-    connection.query = util.promisify(connection.query);
+		//console.log( JSON.stringify( {results} ) );
 
-    const results = await connection.query(sql, parms);
+		console.log( 'SQL', sql );
+		console.log( 'PARMS', JSON.stringify( parms ) );
 
-    console.log( JSON.stringify( {results} ) );
+		connection.destroy();
 
-    connection.destroy();
+		return results;
+	} catch (e) {
+		throw e;
+	}
+}
 
-    return results;
+async function InsertAsync(config, table, parms) {
+    const sql = GenerateInsert(table, parms);
+
+    return await RunQueryAsync(config, sql, parms);
+}
+
+async function UpdateAsync(config, table, parms, primaryKey) {
+    const sql = GenerateUpdate(table, parms, primaryKey);
+
+    return await RunQueryAsync(config, sql, parms);
 }
 
 // By https://github.com/mysqljs/mysql#custom-format
@@ -60,5 +115,7 @@ function NamedParmsQueryFormat (query, values) {
 module.exports = {
     open: OpenConnection,
     query: RunQuery,
-    queryAsync: RunQueryAsync
+    queryAsync: RunQueryAsync,
+    insertAsync: InsertAsync,
+    updateAsync: UpdateAsync
 };
