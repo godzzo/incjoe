@@ -22,6 +22,12 @@
 			"notStringify": true,
             "module": "./util_ijoe_mysql.js",
             "action": "RunSql"
+		},
+		{
+            "name": "TestFilter",
+            "filter": true,
+            "module": "./sakila/app/code/actions.js"
         }
+
     ]
 }

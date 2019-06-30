@@ -92,18 +92,20 @@ function ParseUrl(ctx) {
 }
 
 async function IncludeJoe (ctx) {
-    const {url, fileName, dirPath, templatePath, templateRoot, outPath} = ParseUrl(ctx);
+    const resource = ParseUrl(ctx);
     const parms = ParseQueryString(ctx);
 
-    if ( fs.existsSync(templatePath) ) {
+    if ( fs.existsSync(resource.templatePath) ) {
 		
-        if (parms.gen && config.srv.mode != 'POST_GEN') {
-            console.log('Include!', {templatePath, outPath, parms});
+		await InvokeFilters(resource, parms, ctx);
 
-            await ParseFile(templatePath, outPath, parms, templateRoot);
+        if (parms.gen && config.srv.mode != 'POST_GEN') {
+            console.log('Include!', {templatePath: resource.templatePath, outPath: resource.outPath, parms});
+
+            await ParseFile(resource.templatePath, resource.outPath, parms, resource.templateRoot);
         }
 
-        const {content, data} = await InvokeContents(url, parms, ctx);
+        const {content, data} = await InvokeContents(resource.url, parms, ctx);
 
 		data.session = ctx.session;
 
@@ -112,17 +114,27 @@ async function IncludeJoe (ctx) {
 		// 'inner:'
 		if (config.srv.mode == 'POST_GEN') {
 			const body = await ParseFile(
-				templatePath, outPath, parms, templateRoot, true, 
+				resource.templatePath, resource.outPath, parms, resource.templateRoot, true, 
 				{content, data, invoke: async (actionName, incParms) => {
 					return await InvokeAction(actionName,  {...parms, ...ctx.session, ...incParms}, ctx);
 				}});
 
 			ctx.response.body = await InvokeContent( 'inner:' + body, {content, data, config} );
 		} else {
-			ctx.response.body = await InvokeContent( outPath, {content, config} );
+			ctx.response.body = await InvokeContent( resource.outPath, {content, config} );
 		}
 
     }
+}
+
+async function InvokeFilters(resource, parms, ctx) {
+	const filters = config.invokable.filter(el => el.filter);
+	
+	for (const filter of filters) {
+		console.log('Filter found', JSON.stringify(filter));
+		await LoadContent(filter, resource, resource, parms, ctx);
+	}
+
 }
 
 async function InvokeAction(name, parms, ctx) {
@@ -144,7 +156,7 @@ async function InvokeContents(url, parms, ctx) {
 
 	for (const setting of config.invokable) {
 
-		if (new RegExp(setting.mask).test(url)) {
+		if (setting.mask && new RegExp(setting.mask).test(url)) {
 
 			// Here was a funy incident without await, the contents not loaded, and the Invoke called :)
 			await LoadContent(setting, content, data, parms, ctx);
@@ -158,6 +170,11 @@ async function LoadContent(setting, content, data, parms, ctx) {
     if (!modules[setting.module]) {
         console.error(`Not found ${setting.module} module, for ( ${setting.mask} )!`, setting);
     } else {
+
+		if (!setting.action && setting.name) {
+			setting.action = setting.name;
+		}
+
         if (!modules[setting.module][setting.action]) {
             console.error(`Not found ${setting.action} action, for ( ${setting.mask} )!`, setting);
         } else {
