@@ -17,7 +17,7 @@
     "dom-parser": "^0.1.5",
     "ejs": "^2.6.1",
     "fs": "0.0.1-security",
-    "jsdom": "^13.0.0",
+    "jsdom": "^16.5.0",
     "koa": "^2.7.0",
     "koa-logger": "^3.2.0",
     "koa-session": "^5.12.0",
